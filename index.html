@@ -1,0 +1,341 @@
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10.0.2/dist/sweetalert2.all.min.js"></script>
+    <script src="adblockDetector.js"></script>
+    <script src="https://vid.springserve.com/ssusersync"></script>
+    <script
+      src="https://code.jquery.com/jquery-1.12.4.min.js"
+      integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+      crossorigin="anonymous"
+    ></script>
+    <script src="https://amp.akamaized.net/hosted/1.1/player.esi?apikey=univtec.trial&version=9.0.20"></script>
+  </head>
+  <body>
+    <div id="amp"></div>
+    <script>
+      (function (i, s, o, g, r, a, m) {
+        i["GoogleAnalyticsObject"] = r;
+        (i[r] =
+          i[r] ||
+          function () {
+            (i[r].q = i[r].q || []).push(arguments);
+          }),
+          (i[r].l = 1 * new Date());
+        (a = s.createElement(o)), (m = s.getElementsByTagName(o)[0]);
+        a.async = 1;
+        a.src = g;
+        m.parentNode.insertBefore(a, m);
+      })(
+        window,
+        document,
+        "script",
+        "https://www.google-analytics.com/analytics.js",
+        "ga"
+      );
+
+      var trackingUNIV = "UA-55351355-50";
+
+      if (trackingUNIV) {
+        ga("create", trackingUNIV, { name: "univ" });
+      }
+      ga("create", "UA-19609167-1", "auto");
+
+      var trackEvent = function (category, action, value) {
+        console.log("Invoke track event");
+        ga("send", "event", category, action, "", value);
+        if (trackingUNIV) {
+          ga("univ.send", "event", category, action, "", value);
+        }
+      };
+
+      window.adblockDetector.init({
+        found: function () {
+          trackEvent("adblocker", "Found");
+          console.log("Ad Blocker found");
+          Swal.fire({
+            title: "Are you using an Adblocker?",
+            text:
+              "To enjoy this content you must disable the ad blocker. Once the adblocker is disabled, refresh this site",
+            icon: "question",
+            showCancelButton: false, // There won't be any cancel button
+            confirmButtonText: "Refresh now",
+            allowOutsideClick: false,
+          }).then(function (result) {
+            location.reload();
+          });
+        },
+        notFound: function () {
+          trackEvent("adblocker", "Not Found");
+          console.log("Ad Blocker not found");
+        },
+      });
+
+      function initPlayer(userId) {
+        var config = {
+          plugins: {
+            imadai: {
+              resources: [
+                {
+                  src: "\/\/imasdk.googleapis.com\/js\/sdkloader\/ima3_dai.js",
+                  type: "text\/javascript",
+                  async: true,
+                },
+                {
+                  src: "${paths.plugins}imadai\/Imadai.js",
+                  type: "text\/javascript",
+                  async: true,
+                },
+              ],
+            },
+            ima: {
+              resources: [
+                {
+                  src: "\/\/imasdk.googleapis.com\/js\/sdkloader\/ima3.js",
+                  type: "text\/javascript",
+                  async: true,
+                },
+                {
+                  src: "${paths.plugins}ima\/Ima.min.js",
+                  type: "text\/javascript",
+                  async: true,
+                },
+              ],
+              adTagUrl:
+                "https:\/\/pubads.g.doubleclick.net\/gampad\/ads?iu=\/43459271\/enginemedialive\/ss-KRDO&description_url=krdo.com&tfcd=0&npa=0&sz=640x480&min_ad_duration=0&max_ad_duration=30000&gdfp_req=1&output=vast&unviewed_position_start=1&env=vp&impl=s&correlator=[CACHEBUSTER]",
+            },
+            chromecast: {
+              resources: [
+                {
+                  src: "#{paths.plugins}chromecast\/Chromecast.min.css",
+                  type: "text\/css",
+                  async: true,
+                },
+                {
+                  src: "#{paths.plugins}chromecast\/Chromecast.min.js",
+                  type: "text\/javascript",
+                  async: true,
+                },
+              ],
+              sdk: [
+                {
+                  src:
+                    "\/\/www.gstatic.com\/cv\/js\/sender\/v1\/cast_sender.js?loadCastFramework=1",
+                  type: "text\/javascript",
+                },
+              ],
+              applicationId: "CC1AD845",
+            },
+          },
+          autoplay: true,
+          autoplayPolicy: "muted",
+          withCredentials: true,
+          media: {
+            type: "application\/x-mpegURL",
+            temporalType: "live",
+            src: "http:\/\/localhost:3002\/test\/index.m3u8",
+            track: [{ kind: "captions", type: "text\/cea-708", srclang: "en" }],
+          },
+        };
+
+        if (
+          typeof config.media.src !== "undefined" &&
+          userId &&
+          userId !== ""
+        ) {
+          config.media.src = config.media.src + "?player.ssid=" + userId;
+        }
+
+        var adInterval = null;
+        var adVolta = 0;
+
+        if (userId) {
+          config.media.adTagParameters = {
+            cust_params: "ss_user_id=" + userId,
+          };
+        }
+
+        akamai.amp.AMP.create("amp", config, function (event) {
+          amp = event.player;
+
+          amp.addTransform(
+            akamai.amp.TransformType.CUE_CHANGE,
+            function (cues) {
+              if (cues && cues.length === 0) return cues;
+
+              var height = document.body.offsetHeight;
+              var totalHeight = 0;
+              var isSafari = /^((?!chrome|android).)*safari/i.test(
+                navigator.userAgent
+              );
+
+              if (height <= 400) {
+                totalHeight = 14;
+              } else if (height <= 500) {
+                totalHeight = 10;
+              } else if (height <= 800) {
+                totalHeight = 8;
+              } else {
+                totalHeight = 7;
+              }
+
+              const lineHeight = cues.length;
+              return cues.map(function (cue, index) {
+                cue.align = "center";
+                cue.position = "auto";
+                cue.size = 100;
+                cue.vertical = "";
+                if (isSafari) {
+                  cue.line = 100 - lineHeight * 10 + index * 8;
+                } else {
+                  // CC size = 24px;
+                  // CC "Security edge" = 3
+
+                  var n = height / 24;
+                  cue.line = n - lineHeight + index - 3;
+                }
+              });
+            }
+          );
+        }).then(function (amp) {
+          
+
+
+          amp.addEventListener("adstarted", function () {
+            console.log("Ad started");
+            trackEvent("ad", "Play");
+
+            var timeAd = 0;
+            adVolta++;
+            clearInterval(adInterval);
+
+            trackEvent("adplayed " + adVolta, pad(timeAd, 6) + " seconds");
+            adInterval = window.setInterval(function () {
+              timeAd++;
+              if (!amp.paused) {
+                console.log("adplaying:" + timeAd);
+                trackEvent("adplayed " + adVolta, pad(timeAd, 6) + " seconds");
+              }
+            }, 1000);
+          });
+          amp.addEventListener("adended", function () {
+            console.log("Ad ended");
+            trackEvent("ad", "End");
+            clearInterval(adInterval);
+          });
+          amp.addEventListener("adskipped", function () {
+            trackEvent("ad", "Skip");
+            console.log("Ad Skipped");
+            clearInterval(adInterval);
+          });
+          amp.addEventListener("ended", function () {
+            trackEvent("video", "End");
+            console.log("Video End");
+          });
+          amp.addEventListener("started", function () {
+            trackEvent("video", "Play");
+            console.log("Video Play");
+
+            var time = 0;
+            trackEvent("played", pad(time, 6) + " minutes");
+            timeoutID = window.setInterval(function () {
+              if (!amp.paused) {
+                time++;
+                console.log("playing:" + time);
+                trackEvent("played", pad(time, 6) + " minutes");
+              }
+            }, 60000);
+          });
+          
+          let ampClickableEle = document.createElement("div");
+          ampClickableEle.className = "amp-clickable";
+          ampClickableEle.style.cssText = "position: absolute;width: 100%;height: 100%;pointer-events: all;z-index:-1;";
+          let ampClickThrough = null;
+          amp.addEventListener("timedmetadata", function (event) { 
+            let metaData = event.data.value.data;
+
+            if(metaData.includes("http")){
+              ampClickThrough = function(){
+                  window.open(metaData);
+              };
+              
+              document.querySelector(".amp-interactive").classList.add('amp-share')
+              ampClickableEle.addEventListener("click", ampClickThrough);
+              amp.react.container.appendChild(ampClickableEle);
+              
+            } else if( metaData == "disable"){
+              
+              ampClickableEle.removeEventListener("click", ampClickThrough);
+              amp.react.container.removeChild(ampClickableEle);
+              document.querySelector(".amp-interactive").classList.remove('amp-share')
+
+              console.log('end')
+            }
+           });
+        });
+      }
+
+      $.ajax({
+        url: "https://sync.springserve.com/usersync/json",
+        timeout: 1000,
+        xhrFields: { withCredentials: true },
+        // Work with the response
+        success: function (userInfo) {
+          var userId = userInfo ? userInfo.user_id : null;
+          initPlayer(userId);
+        },
+        error: function () {
+          initPlayer(null);
+        },
+      });
+
+      function pad(n, width, z) {
+        z = z || "0";
+        n = n + "";
+        return n.length >= width
+          ? n
+          : new Array(width - n.length + 1).join(z) + n;
+      }
+    </script>
+    <!--
+<style>
+    body{
+        margin: 0px;
+    }
+    .amp-caption-text{
+        height: 30vh;
+        width: 100%;
+        bottom: 0px;
+        text-align: center;
+    }
+    .amp-caption-area{
+        width: 100%;
+        text-align: center !important;
+    }
+</style>
+<style>
+    body{
+        margin: 0px;
+    }
+    .amp-caption{
+        line-height: 2em !important;
+    }
+</style>
+-->
+    <style>
+      body {
+        margin: 0px;
+        font-family: sans-serif;
+      }
+      .swal2-popup {
+        width: 100%;
+        height: 100%;
+      }
+      .swal2-icon-show {
+        margin-bottom: 10px;
+      }
+      .amp-share {
+        display: none;
+      }
+    </style>
+  </body>
+</html>

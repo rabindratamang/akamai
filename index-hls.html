@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  </head>
+  <body>
+    <!-- Or if you want a more recent alpha version -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/hls.js@alpha"></script> -->
+    <video id="video" width="550" height="320"></video>
+
+    <button
+      type="button"
+      class="btn btn-sm btn-info"
+      title="video.play()"
+      onclick="$('#video')[0].play()"
+    >
+      Play
+    </button>
+    <script>
+      function Utf8ArrayToStr(array) {
+        let out, i, len, c;
+        let char2, char3;
+
+        out = "";
+        len = array.length;
+        i = 0;
+        while (i < len) {
+          c = array[i++];
+          switch (c >> 4) {
+            case 0:
+            case 1:
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+              // 0xxxxxxx
+              out += String.fromCharCode(c);
+              break;
+            case 12:
+            case 13:
+              // 110x xxxx   10xx xxxx
+              char2 = array[i++];
+              out += String.fromCharCode(((c & 0x1f) << 6) | (char2 & 0x3f));
+              break;
+            case 14:
+              // 1110 xxxx  10xx xxxx  10xx xxxx
+              char2 = array[i++];
+              char3 = array[i++];
+              out += String.fromCharCode(
+                ((c & 0x0f) << 12) |
+                  ((char2 & 0x3f) << 6) |
+                  ((char3 & 0x3f) << 0)
+              );
+              break;
+          }
+        }
+
+        return out;
+      }
+
+      let video = document.getElementById("video");
+      let videoSrc = "http://localhost:3002/test/index.m3u8";
+
+      if (Hls.isSupported()) {
+        let startFrag = null;
+        let endFrag = null;
+        console.log("hls supported");
+        let hls = new Hls();
+        hls.loadSource(videoSrc);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+          video.play();
+
+          hls.on(Hls.Events.FRAG_CHANGED, function (event, data) {
+            if (data.frag._url == startFrag.fragment._url) {
+              hls.media.onclick = function () {
+                window.open(startFrag.click);
+              };
+            }
+
+            if (data.frag._url == endFrag.fragment._url) {
+              hls.media.onclick = function () {};
+            }
+          });
+
+          hls.on(Hls.Events.FRAG_PARSING_METADATA, function (data, obj) {
+            if (obj.samples && obj.samples[0].data) {
+              let str = Utf8ArrayToStr(obj.samples[0].data);
+              str = str.trim();
+
+              let pos = str.indexOf("http");
+              if (pos != -1) {
+                str = str.slice(pos);
+                startFrag = {
+                  fragment: obj.frag,
+                  click: str,
+                };
+              } else {
+                let pos = str.indexOf("disable");
+                if (pos != -1) {
+                  str = str.slice(pos);
+                  if (str.includes("disable")) {
+                    endFrag = {
+                      fragment: obj.frag,
+                    };
+                  }
+                }
+              }
+            }
+          });
+        });
+      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+        video.src = videoSrc;
+      }
+    </script>
+  </body>
+</html>
