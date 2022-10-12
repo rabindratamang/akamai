@@ -71,6 +71,10 @@
       });
 
       function initPlayer(userId) {
+        const params = new URLSearchParams(
+          window.location.search
+        );
+        const srcUrl = params.get("src"); 
         var config = {
           plugins: {
             imadai: {
@@ -132,7 +136,7 @@
           media: {
             type: "application\/x-mpegURL",
             temporalType: "live",
-            src: "https:\/\/rabindratamang.github.io\/akamai\/index.m3u8",
+            src: srcUrl || "https:\/\/rabindratamang.github.io\/akamai\/index.m3u8",
             track: [{ kind: "captions", type: "text\/cea-708", srclang: "en" }],
           },
         };
