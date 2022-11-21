@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Dash.js Rocks</title>
+    <style>
+      video {
+        width: 640px;
+        height: 360px;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <video id="videoPlayer" controls></video>
+    </div>
+    <script src="./dash.debug.min.js"></script>
+    <script>
+      (function () {
+        var url =
+          "https://g3.g-mana.live/media/aa4e2727-47d1-4fae-8d95-ead0a71b7caa/Manifest?device=CLRVODDASHUN&IS=0&ET=1666871699&CIP=213.57.7.4&KO=1&KN=1&US=a8d944d9f72c0a2cb209afc4b87bf0b8";
+        var player = dashjs.MediaPlayer().create();
+        player.initialize(document.querySelector("#videoPlayer"), url, true);
+        player.updateSettings({
+          debug: {
+            logLevel: dashjs.Debug.LOG_LEVEL_DEBUG,
+          },
+        });
+        // console.log(dashjs.MediaPlayer.events)
+        // player.on(dashjs.MediaPlayer.events["LOG"], function(data, data2){
+        //     console.log(data);
+        //     console.log(data2);
+        // })
+      })();
+    </script>
+  </body>
+</html>
