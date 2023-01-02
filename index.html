@@ -255,7 +255,7 @@
           let ampClickThrough = null;
           amp.addEventListener("timedmetadata", function (event) { 
             let metaData = event.data.value.data;
-
+            console.log(metaData, "id3")
             if(metaData.includes("http")){
               ampClickThrough = function(){
                   window.open(metaData);
